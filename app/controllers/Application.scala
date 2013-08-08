@@ -3,6 +3,7 @@ package controllers
 import play.api.mvc.{Action, Controller}
 import play.api.libs.json._
 import scala.collection.TraversableOnce
+import scala.math.abs
 
 
 object Application extends Controller {
@@ -58,6 +59,11 @@ object Application extends Controller {
       // i.e. middle or left of middle value when sorted
       ys.sorted.apply(ys.length/2)
     }
+
+    lazy val mean: Double = {
+      // i.e. the usual average
+      ys.sum.toDouble / ys.length
+    }
   }
 
   def modemedianbucket() = Action {
@@ -103,5 +109,61 @@ object Application extends Controller {
     }
 
     Ok(asJson(modemedianbucketed))
+  }
+
+  def largesttrianglethreebucket() = Action {
+    // Bucketted largest triangle downsampling to 100 data points
+
+    // Split the data into equal number of buckets as the threshold but have the
+    // ﬁrst bucket only containing the ﬁrst data point and the last bucket
+    // containing only the last data point
+    val bucketSize = RawData.values.size / 100
+    val buckets = {
+      val grouped = RawData.values.grouped(bucketSize).toList
+
+      val firstBucket = List(RawData.values.head)
+      val middle = grouped.drop(1).take(grouped.length - 2)
+      val lastBucket = List(RawData.values.last)
+
+      firstBucket :: middle ::: List(lastBucket)
+    }
+
+    val largesttrianglethreebucket: List[(Int, Int)] = {
+      // Select the point in the ﬁrst bucket
+      var selected = buckets.head
+
+      val averagePoints: List[(Double, Double)] = buckets map { points =>
+        // The average point in a bucket is the average of xs and ys separately.
+        (
+          (points map { _._1 }).mean,
+          (points map { _._2 }).mean
+        )
+      }
+
+      // for each bucket except the ﬁrst and last do
+      (buckets drop 1).zip(averagePoints drop 2) map { case (bucket, next) =>
+
+        // Rank every point in the bucket by calculating the area of a triangle
+        // it forms with the selected point in the last bucket and the average
+        // point in the next bucket
+        val previous = selected.last
+        val ranks: List[((Int, Int), Double)] = bucket map { current =>
+          val area = 0.5 * abs(
+            (next._1 - previous._1) * (current._2 - previous._2) -
+              (current._1 - previous._1) * (next._2 - previous._1)
+          )
+
+          (current, area)
+        }
+
+        // Select the point with the highest rank within the bucket
+        selected = selected :+ ranks.maxBy(_._2)._1
+      }
+
+      // Select the point in the last bucket
+      selected ::: buckets.last
+    }
+
+    Ok(asJson(largesttrianglethreebucket))
   }
 }
