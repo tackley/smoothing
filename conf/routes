@@ -1,10 +1,11 @@
-GET        /                    controllers.Application.index(data: String ?= "original.json")
+GET        /                                    controllers.Application.index(data: String ?= "original.json")
 
-GET        /original.json           controllers.Application.original
-GET        /sampled.json           controllers.Application.sampled
-GET        /averaged.json           controllers.Application.averaged
-GET        /modemedianbucket.json           controllers.Application.modemedianbucket
+GET        /original.json                       controllers.Application.original
+GET        /sampled.json                        controllers.Application.sampled
+GET        /averaged.json                       controllers.Application.averaged
+GET        /modemedianbucket.json               controllers.Application.modemedianbucket
+GET        /largesttrianglethreebucket.json     controllers.Application.largesttrianglethreebucket
 
 # Map static resources from the /public folder to the /assets URL path
-GET        /assets/*file        controllers.Assets.at(path="/public", file)
+GET        /assets/*file                        controllers.Assets.at(path="/public", file)
 
